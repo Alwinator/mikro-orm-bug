@@ -1,6 +1,6 @@
 import { Recipe } from './recipe.entity'
 import { Injectable } from '@nestjs/common'
-import {EntityRepository, wrap} from '@mikro-orm/core'
+import {EntityData, EntityRepository, wrap} from '@mikro-orm/core'
 import { InjectRepository } from '@mikro-orm/nestjs'
 import {IngredientService} from "../ingredient/ingredient.service";
 import {Ingredient} from "../ingredient/ingredient.entity";
@@ -22,7 +22,7 @@ export class RecipeService{
     await this.ingredientService.deleteAll()
 
 
-    let ingredients: {id: number, name: string}[] = [
+    let ingredients: EntityData<Ingredient>[] = [
           {
             id: 1,
             name: 'Tomato',
@@ -37,34 +37,31 @@ export class RecipeService{
           },
         ]
 
-    for (let ingredient of ingredients as unknown as Ingredient[]) {
-      await this.ingredientService.createIngredient(ingredient)
-    }
 
-    const recipe: Recipe = {
+    await this.ingredientService.createIngredients(ingredients)
+
+    const recipe: EntityData<Recipe> = {
       id: 1,
       name: 'Pizza',
-      // @ts-ignore
       ingredients: [
           {
           id: 1,
           quantity: 4,
           ingredient: ingredients[0],
-        } as RecipeIngredient
+        }
       ],
     }
     await this.createRecipe(recipe)
 
-    const updatedRecipe: Recipe = {
+    const updatedRecipe: EntityData<Recipe> = {
       id: 1,
       name: 'Pizza',
-      // @ts-ignore
       ingredients: [
         {
           id: 1,
           quantity: 2,
           ingredient: ingredients[1],
-        } as RecipeIngredient
+        }
       ],
     }
 
@@ -82,21 +79,14 @@ export class RecipeService{
     console.dir(updatedRecipe, {depth: null})
   }
 
-  public async createRecipe(recipe: Recipe): Promise<number> {
+  public async createRecipe(recipe: EntityData<Recipe>): Promise<void> {
     const e = this.recipeRepository.create(recipe)
     await this.recipeRepository.persistAndFlush(e)
-    return e.id
   }
-  public async updateRecipe(recipe: Recipe): Promise<void> {
-    const newRecipe = {...recipe}
-
-    const id = newRecipe.id
-    delete newRecipe['id']
-
-    const e = await this.recipeRepository.findOne({id})
-
-    const result = wrap(e).assign(newRecipe, { mergeObjects: true })
-    await this.recipeRepository.persistAndFlush(result)
+  public async updateRecipe(recipe: EntityData<Recipe>): Promise<void> {
+    const e = await this.recipeRepository.findOne(recipe.id)
+    wrap(e).assign(recipe, { mergeObjects: true })
+    await this.recipeRepository.flush()
   }
   public async deleteAll(){
     const recipes = await this.recipeRepository.findAll({})

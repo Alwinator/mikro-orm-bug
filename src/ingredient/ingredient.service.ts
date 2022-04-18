@@ -1,5 +1,5 @@
 import { Ingredient } from './ingredient.entity'
-import { EntityRepository } from '@mikro-orm/core'
+import {EntityData, EntityRepository} from '@mikro-orm/core'
 import { InjectRepository } from '@mikro-orm/nestjs'
 
 
@@ -9,10 +9,12 @@ export class IngredientService{
     private readonly ingredientRepository: EntityRepository<Ingredient>
   ){}
 
-  public async createIngredient(ingredient: Ingredient): Promise<number> {
-    const e = this.ingredientRepository.create(ingredient)
-    await this.ingredientRepository.persistAndFlush(e)
-    return e.id
+  public async createIngredients(ingredients: EntityData<Ingredient>[]): Promise<void> {
+    for (let ingredient of ingredients) {
+      const e = this.ingredientRepository.create(ingredient)
+      this.ingredientRepository.persist(e)
+    }
+    await this.ingredientRepository.flush()
   }
   public async deleteAll(){
     const ingredients = await this.ingredientRepository.findAll({})
