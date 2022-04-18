@@ -1,0 +1,1 @@
+npx mikro-orm migration:create --initial && npx mikro-orm migration:up
